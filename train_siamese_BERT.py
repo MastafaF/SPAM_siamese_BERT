@@ -13,9 +13,15 @@ import logging
 from datetime import datetime
 import sys
 sys.path.append("./")
+sys.path.append("./utils")
+
+from utils.EmbeddingSimilarityEvaluator import EmbeddingSimilarityEvaluatorNew
 from SPAM_Reader import *
 import pandas as pd
 import numpy as np
+
+from sklearn.metrics import classification_report
+
 
 #### Just some code to print debug information to stdout
 logging.basicConfig(format='%(asctime)s - %(message)s',
@@ -82,7 +88,6 @@ dev_dataloader = DataLoader(dev_data, shuffle=True, batch_size=batch_size)
 evaluator = EmbeddingSimilarityEvaluator(dev_dataloader)
 
 # Configure the training
-
 num_epochs = 1
 
 warmup_steps = math.ceil(len(train_dataloader) * num_epochs * 0.1) #10% of train data for warm-up
@@ -101,16 +106,56 @@ model.fit(train_objectives=[(train_dataloader, train_loss)],
 
 
 
-# ##############################################################################
-# #
-# # Load the stored model and evaluate its performance on NLI benchmark dataset
-# #
-# ##############################################################################
+##############################################################################
 #
-# model = SentenceTransformer(model_save_path)
-# test_data = SentencesDataset(examples=sts_reader.get_examples("sts-test.csv"), model=model)
-# test_dataloader = DataLoader(test_data, shuffle=False, batch_size=batch_size)
-# evaluator = EmbeddingSimilarityEvaluator(test_dataloader)
+# Load the stored model and evaluate its performance on test data
 #
-# model.evaluate(evaluator)
+##############################################################################
 
+# from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
+# from SPAM_Reader import *
+from sentence_transformers import SentencesDataset, LoggingHandler, SentenceTransformer
+from torch.utils.data import DataLoader
+
+parent_data_folder = './data/test/'
+spam_reader = SPAMReader(parent_data_folder)  # after
+
+batch_size = 32
+
+
+# model_save_path = "./output/train_SPAMbert-base-uncased-2020-03-01_10-31-29"
+model = SentenceTransformer(model_save_path)
+test_data = SentencesDataset(examples=spam_reader.get_examples("test"), model=model)
+test_dataloader = DataLoader(test_data, shuffle=False, batch_size=batch_size)
+evaluator = EmbeddingSimilarityEvaluatorNew(test_dataloader)
+similarity, labels = model.evaluate(evaluator)
+
+
+"""
+Bon normalement, 
+
+si x > 0, alors les points sont similaires alors on a (nonSPAM, nonSPAM) alors on assigne 1 
+si x < 0, alors les points sont dissimilaires alors on a (SPAM, nonSPAM) alors on assigne 0 
+
+Mais avec notre implementation source, on avait dit label_true(SPAM, nonSPAM) = label_true(SPAM) = 1 (c'etait simple a coder en fait car on preserve le label du SPAM)
+et label_true
+"""
+
+def threshold(x):
+  if x > 0:
+    return 0
+  else:
+    return 1
+
+
+labels_pred = [threshold(dot_product) for sublist in labels for dot_product in sublist] # if positive value, they are similar, if negative they are dissimilar
+
+# @TODO
+# classification report with sklearn comparing labels and df_test.is_spam
+
+# Error in Embedding NEW: @TODO: check how to get predictions
+target_names = ['nonSPAM', 'SPAM']
+classification_report_df = classification_report(df_test.is_spam, labels_pred, target_names=target_names)
+print(classification_report_df)
+
+classification_report_df.to_csv("./output/classification_report_test.csv")

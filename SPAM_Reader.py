@@ -21,25 +21,41 @@ class SPAMReader(object):
         #           mode="rt", encoding="utf-8").readlines()
         # labels = open(os.path.join(self.dataset_folder, split + '.label'),
         #                    mode="rt", encoding="utf-8").readlines()
+        if split == "train":
+          # Open dataframe
+          df_split = pd.read_csv(os.path.join(self.dataset_folder, "pairs_ham10K_spam75K.tsv"), sep='\t')
 
-        # Open dataframe
-        df_split = pd.read_csv(os.path.join(self.dataset_folder, "pairs_ham10K_spam75K.tsv"), sep='\t')
+          # nonSPAM
+          s1 = df_split.loc[:,'message_cleaned_x'].values
+          s1 = list(s1)
 
-        # nonSPAM
-        s1 = df_split.loc[:,'message_cleaned_x'].values
-        s1 = list(s1)
+          # SPAM
+          s2 = df_split.loc[:, 'message_cleaned_y'].values
+          s2 = list(s2)
 
-        # SPAM
-        s2 = df_split.loc[:, 'message_cleaned_y'].values
-        s2 = list(s2)
+          # labels
+          labels = df_split.loc[:, 'label'].values
+          labels = list(labels)
 
-        # labels
-        labels = df_split.loc[:, 'label'].values
-        labels = list(labels)
+        # print("LABELS")
+        # print(type(labels))
+        # print(labels[:10])
+        if split == "test":
+          # Open dataframe: @TODO: change name
+          df_split = pd.read_csv(os.path.join(self.dataset_folder, "pairs_ham10K_spam75K.tsv"), sep='\t')
 
-        print("LABELS")
-        print(type(labels))
-        print(labels[:10])
+          # nonSPAM
+          s1 = df_split.loc[:,'message_cleaned'].values
+          s1 = list(s1)
+
+          # SPAM
+          s2 = df_split.loc[:, 'reference_nonSPAM'].values
+          s2 = list(s2)
+
+          # labels
+          labels = df_split.loc[:, 'is_spam'].values
+          labels = list(labels)
+
 
         examples = []
         id = 0
