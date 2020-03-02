@@ -115,7 +115,7 @@ if __name__ == "__main__":
     # df_concat_test = get_pairs(df_nonSPAM_test, df_SPAM_test, N_pairs_nonSPAM=10000)
 
     # 3/ Save them in data directory
-    df_concat_train.to_csv(SIAMESE_BERT + "/data/train/pairs_ham10K_spam75K.tsv", sep='\t', index=False)
+    # df_concat_train.to_csv(SIAMESE_BERT + "/data/train/pairs_ham10K_spam75K.tsv", sep='\t', index=False)
     # df_concat_test.to_csv(SIAMESE_BERT + "/data/test/pairs_ham10K_spam75K.tsv", sep='\t', index=False)
 
     # df_concat = get_pairs(df_nonSPAM, df_SPAM, N_pairs_nonSPAM=10000)
