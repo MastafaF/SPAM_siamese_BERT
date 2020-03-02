@@ -145,10 +145,10 @@ if __name__ == "__main__":
     import pandas as pd
     import numpy as np
 
-    file_indices_train_test = "./data/storage_indices_train_test.dic"
-    # Get dictionary with indices from train/test set
-    with open(file_indices_train_test, "rb") as f:
-        storage_indices = pickle.load(f)
+    # file_indices_train_test = DATA_PATH + "/storage_indices_train_test.dic"
+    # # Get dictionary with indices from train/test set
+    # with open(file_indices_train_test, "rb") as f:
+    #     storage_indices = pickle.load(f)
 
     # df = pd.read_csv("./data/df_spam_XLM_en_2048_embed.csv")
     # df_test = df[df.index.isin(storage_indices['test'])]
@@ -188,4 +188,4 @@ if __name__ == "__main__":
     # print(df_test.sample(2))
 
     df_test = df_test.reset_index(drop=True)
-    df_test.to_csv("../data/test/pairs_ham10K_spam75K.tsv", sep="\t")
+    df_test.to_csv(DATA_PATH + "/test/pairs_ham10K_spam75K.tsv", sep="\t")
