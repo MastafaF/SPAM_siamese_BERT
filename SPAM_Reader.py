@@ -8,7 +8,7 @@ class SPAMReader(object):
     """
     Reads in the SPAM Collection Dataset
     """
-    def __init__(self, dataset_folder):
+    def __init__(self, dataset_folder): # dataset_folder = parent folder = "whatever_is_before/data"
         self.dataset_folder = dataset_folder
 
     def get_examples(self, split, max_examples=0):
@@ -23,7 +23,7 @@ class SPAMReader(object):
         #                    mode="rt", encoding="utf-8").readlines()
         if split == "train":
           # Open dataframe
-          df_split = pd.read_csv(os.path.join(self.dataset_folder, "pairs_ham10K_spam75K.tsv"), sep='\t')
+          df_split = pd.read_csv(os.path.join(self.dataset_folder, "train/pairs_ham10K_spam75K.tsv"), sep='\t')
 
           # nonSPAM
           s1 = df_split.loc[:,'message_cleaned_x'].values
@@ -42,7 +42,7 @@ class SPAMReader(object):
         # print(labels[:10])
         if split == "test":
           # Open dataframe: @TODO: change name
-          df_split = pd.read_csv(os.path.join(self.dataset_folder, "pairs_ham10K_spam75K.tsv"), sep='\t')
+          df_split = pd.read_csv(os.path.join(self.dataset_folder, "test/pairs_ham10K_spam75K.tsv"), sep='\t')
 
           # nonSPAM
           s1 = df_split.loc[:,'message_cleaned'].values

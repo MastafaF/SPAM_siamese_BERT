@@ -35,7 +35,7 @@ logging.basicConfig(format='%(asctime)s - %(message)s',
 model_name = 'bert-base-uncased'
 batch_size = 32
 # Data in French from Flaubert github
-parent_data_folder = './data/train/'
+parent_data_folder = './data/'
 spam_reader = SPAMReader(parent_data_folder)  # after
 # sts_reader = STSDataReader('../datasets/stsbenchmark')
 train_num_labels = spam_reader.get_num_labels()
