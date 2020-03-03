@@ -19,11 +19,14 @@ parser = argparse.ArgumentParser(description='Evaluating Siamese BERT on extreme
 parser.add_argument('--nb_reference', type=int, default=1,
     help='Strategy used to compare test set with N reference normal observations. We strategy'
          'in {1,3} ')
+parser.add_argument('--nb_pairs_nonSPAM', type=int, default=1e3,
+    help='Number of pairs of nonSPAM used for comparison in the training set ')
+
 
 
 args = parser.parse_args()
 NB_REFERENCE_NORMAL = args.nb_reference
-
+N_pairs_nonSPAM = args.nb_pairs_nonSPAM
 
 random.seed(1995)
 
@@ -124,7 +127,7 @@ if __name__ == "__main__":
 
 
     # 2/ Get pairs_train , pairs_test
-    df_concat_train = get_pairs(df_nonSPAM_train, df_SPAM_train, N_pairs_nonSPAM=10000)
+    df_concat_train = get_pairs(df_nonSPAM_train, df_SPAM_train, N_pairs_nonSPAM=N_pairs_nonSPAM)
     # df_concat_test = get_pairs(df_nonSPAM_test, df_SPAM_test, N_pairs_nonSPAM=10000)
 
     # 3/ Save them in data directory
