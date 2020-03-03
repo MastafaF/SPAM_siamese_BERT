@@ -177,7 +177,9 @@ if NB_REFERENCE_NORMAL == 3:
     labels_pred = [threshold(dot_product) for sublist in labels for dot_product in
                    sublist]  # if positive value, they are similar, if negative they are dissimilar
 
-    df_test_expand = pd.read_csv(DATA_PATH + "/test/pairs_ham10K_spam75K.tsv", sep = "\t" )
+    # IMPORTANT: we need to keep the index of the observations for the group by
+    # So we specify index_col parameter when read_csv is called
+    df_test_expand = pd.read_csv(DATA_PATH + "/test/pairs_ham10K_spam75K.tsv", sep = "\t", index_col = [0])
     df_test_expand['labels_pred'] = labels_pred
 
 
