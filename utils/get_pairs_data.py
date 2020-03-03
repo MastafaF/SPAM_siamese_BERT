@@ -7,7 +7,7 @@ import pickle
 
 
 # export SIAMESE_BERT='/Users/foufamastafa/Documents/micro_projects/sentence_BERT_cosine/anomaly_detection_SPAM_nonSPAM'
-assert os.environ.get('SIAMESE_BERT'), 'Please set the environment variable VAE_DETECTOR'
+assert os.environ.get('SIAMESE_BERT'), 'Please set the environment variable SIAMESE_BERT'
 SIAMESE_BERT = os.environ['SIAMESE_BERT']
 DATA_PATH = SIAMESE_BERT + "/data/"
 sys.path.append(SIAMESE_BERT + '/data/')
@@ -249,5 +249,5 @@ if __name__ == "__main__":
         # We shuffle the test data
         df_test_expand = df_test_expand.sample(frac=1)
 
-        df_test_expand.to_csv("./data/test/pairs_ham10K_spam75K.tsv", sep="\t")
+        df_test_expand.to_csv(DATA_PATH + "/test/pairs_ham10K_spam75K.tsv", sep="\t")
 
