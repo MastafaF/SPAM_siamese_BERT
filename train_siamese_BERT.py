@@ -22,6 +22,18 @@ import numpy as np
 
 from sklearn.metrics import classification_report
 
+import argparse
+
+parser = argparse.ArgumentParser(description='Evaluating Siamese BERT on extremely-skewed dataset. ')
+
+parser.add_argument('--nb_reference', type=int, default=1,
+    help='Strategy used to compare test set with N reference normal observations. We strategy'
+         'in {1,3} ')
+
+
+args = parser.parse_args()
+NB_REFERENCE_NORMAL = args.nb_reference
+
 
 #### Just some code to print debug information to stdout
 logging.basicConfig(format='%(asctime)s - %(message)s',
@@ -88,7 +100,7 @@ dev_dataloader = DataLoader(dev_data, shuffle=True, batch_size=batch_size)
 evaluator = EmbeddingSimilarityEvaluator(dev_dataloader)
 
 # Configure the training
-num_epochs = 1
+num_epochs = 2
 
 warmup_steps = math.ceil(len(train_dataloader) * num_epochs * 0.1) #10% of train data for warm-up
 logging.info("Warmup-steps: {}".format(warmup_steps))
@@ -111,19 +123,6 @@ model.fit(train_objectives=[(train_dataloader, train_loss)],
 # Load the stored model and evaluate its performance on test data
 #
 ##############################################################################
-
-import argparse
-
-parser = argparse.ArgumentParser(description='Evaluating Siamese BERT on extremely-skewed dataset. ')
-
-parser.add_argument('--nb_reference', type=int, default=1,
-    help='Strategy used to compare test set with N reference normal observations. We strategy'
-         'in {1,3} ')
-
-
-args = parser.parse_args()
-NB_REFERENCE_NORMAL = args.nb_reference
-
 import sys
 sys.path.append("./utils")
 from EmbeddingSimilarityEvaluator import EmbeddingSimilarityEvaluatorNew
