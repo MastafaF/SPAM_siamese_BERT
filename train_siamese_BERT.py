@@ -30,10 +30,12 @@ parser.add_argument('--nb_reference', type=int, default=1,
     help='Strategy used to compare test set with N reference normal observations. We strategy'
          'in {1,3} ')
 
+parser.add_argument('--epochs_train', type=int, default=1,
+    help='Number of epochs to train the model ')
 
 args = parser.parse_args()
 NB_REFERENCE_NORMAL = args.nb_reference
-
+NB_EPOCHS = args.epochs_train
 
 #### Just some code to print debug information to stdout
 logging.basicConfig(format='%(asctime)s - %(message)s',
@@ -100,7 +102,8 @@ dev_dataloader = DataLoader(dev_data, shuffle=True, batch_size=batch_size)
 evaluator = EmbeddingSimilarityEvaluator(dev_dataloader)
 
 # Configure the training
-num_epochs = 2
+# @TODO: add parameters num_epochs
+num_epochs = NB_EPOCHS
 
 warmup_steps = math.ceil(len(train_dataloader) * num_epochs * 0.1) #10% of train data for warm-up
 logging.info("Warmup-steps: {}".format(warmup_steps))
