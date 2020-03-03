@@ -37,6 +37,15 @@ args = parser.parse_args()
 NB_REFERENCE_NORMAL = args.nb_reference
 NB_EPOCHS = args.epochs_train
 
+
+# export SIAMESE_BERT='/Users/foufamastafa/Documents/micro_projects/sentence_BERT_cosine/anomaly_detection_SPAM_nonSPAM'
+assert os.environ.get('SIAMESE_BERT'), 'Please set the environment variable SIAMESE_BERT'
+SIAMESE_BERT = os.environ['SIAMESE_BERT']
+DATA_PATH = SIAMESE_BERT + "/data/"
+sys.path.append(SIAMESE_BERT + '/data/')
+
+
+
 #### Just some code to print debug information to stdout
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -168,6 +177,7 @@ if NB_REFERENCE_NORMAL == 3:
     labels_pred = [threshold(dot_product) for sublist in labels for dot_product in
                    sublist]  # if positive value, they are similar, if negative they are dissimilar
 
+    df_test_expand = pd.read_csv(DATA_PATH + "/test/pairs_ham10K_spam75K.tsv", sep = "\t" )
     df_test_expand['labels_pred'] = labels_pred
 
 
@@ -214,7 +224,7 @@ if NB_REFERENCE_NORMAL == 3:
 if NB_REFERENCE_NORMAL == 1:
     labels_pred = [threshold(dot_product) for sublist in labels for dot_product in
                    sublist]  # if positive value, they are similar, if negative they are dissimilar
-
+    df_test = pd.read_csv(DATA_PATH + "/test/pairs_ham10K_spam75K.tsv", sep = "\t" )
 
     target_names = ['nonSPAM', 'SPAM']
     classification_report_df = classification_report(df_test.is_spam, labels_pred, target_names=target_names)
