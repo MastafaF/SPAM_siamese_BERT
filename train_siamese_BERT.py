@@ -112,24 +112,38 @@ model.fit(train_objectives=[(train_dataloader, train_loss)],
 #
 ##############################################################################
 
+import argparse
+
+parser = argparse.ArgumentParser(description='Evaluating Siamese BERT on extremely-skewed dataset. ')
+
+parser.add_argument('--nb_reference', type=int, default=1,
+    help='Strategy used to compare test set with N reference normal observations. We strategy'
+         'in {1,3} ')
+
+
+args = parser.parse_args()
+NB_REFERENCE_NORMAL = args.nb_reference
+
+import sys
+sys.path.append("./utils")
+from EmbeddingSimilarityEvaluator import EmbeddingSimilarityEvaluatorNew
+from SPAM_Reader import SPAMReader
+
 # from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
 # from SPAM_Reader import *
 from sentence_transformers import SentencesDataset, LoggingHandler, SentenceTransformer
 from torch.utils.data import DataLoader
 
-parent_data_folder = './data/test/'
+parent_data_folder = './data/'
 spam_reader = SPAMReader(parent_data_folder)  # after
 
 batch_size = 32
 
-
-# model_save_path = "./output/train_SPAMbert-base-uncased-2020-03-01_10-31-29"
 model = SentenceTransformer(model_save_path)
 test_data = SentencesDataset(examples=spam_reader.get_examples("test"), model=model)
 test_dataloader = DataLoader(test_data, shuffle=False, batch_size=batch_size)
 evaluator = EmbeddingSimilarityEvaluatorNew(test_dataloader)
 similarity, labels = model.evaluate(evaluator)
-
 
 """
 Bon normalement, 
@@ -141,21 +155,66 @@ Mais avec notre implementation source, on avait dit label_true(SPAM, nonSPAM) = 
 et label_true
 """
 
+
 def threshold(x):
-  if x > 0:
-    return 0
-  else:
-    return 1
+    if x > 0:
+        return 0
+    else:
+        return 1
+
+if NB_REFERENCE_NORMAL == 3:
+    labels_pred = [threshold(dot_product) for sublist in labels for dot_product in
+                   sublist]  # if positive value, they are similar, if negative they are dissimilar
+
+    df_test_expand['labels_pred'] = labels_pred
 
 
-labels_pred = [threshold(dot_product) for sublist in labels for dot_product in sublist] # if positive value, they are similar, if negative they are dissimilar
+    def get_most_common_labels_to_df_NEW(df_comparisons):
+        """
+        Example:
+        ----------------
+        df_comparions:
+            labels_pred
+          1       1
+          1       2
+          2       1
+          1       2
 
-# @TODO
-# classification report with sklearn comparing labels and df_test.is_spam
+        output: pandas.DataFrame
+              labels_pred
+          1                 2
+          2                 1
 
-# Error in Embedding NEW: @TODO: check how to get predictions
-target_names = ['nonSPAM', 'SPAM']
-classification_report_df = classification_report(df_test.is_spam, labels_pred, target_names=target_names)
-print(classification_report_df)
+        Explanation:
+        ----------------
+        most_common(label_11, label_12, label_13) = most_common(1, 2, 2) = 2 for the observation with index = 1
+        most_common(label_21) = most_common(1) = 1 for the observation with index = 2
+        """
+        print(
+            "========== Estimating the labels by taking the most common labels from the comparisons to reference observations ==============")
 
-classification_report_df.to_csv("./output/classification_report_test.csv")
+        df_res = df_comparisons.groupby(df_comparisons.index).labels_pred.agg(pd.Series.mode)
+        df_res = pd.DataFrame(df_res)
+        # df_res.rename(columns = {'labels_pred': 'estimated_labels'}, inplace = True)
+        return df_res
+
+
+    # Getting most common labels in df_res
+    df_res = get_most_common_labels_to_df_NEW(df_test_expand)
+    # classification report with sklearn comparing labels and df_test.is_spam
+    from sklearn.metrics import classification_report
+    target_names = ['nonSPAM', 'SPAM']
+    classification_report_df = classification_report(df_test.is_spam, df_res.labels_pred, target_names=target_names)
+    print(classification_report_df)
+
+    classification_report_df.to_csv("./output/classification_report_3ref.tsv", sep = "\t")
+
+if NB_REFERENCE_NORMAL == 1:
+    labels_pred = [threshold(dot_product) for sublist in labels for dot_product in
+                   sublist]  # if positive value, they are similar, if negative they are dissimilar
+
+
+    target_names = ['nonSPAM', 'SPAM']
+    classification_report_df = classification_report(df_test.is_spam, labels_pred, target_names=target_names)
+    print(classification_report_df)
+    classification_report_df.to_csv("./output/classification_report_1ref.tsv", sep="\t")

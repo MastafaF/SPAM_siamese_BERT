@@ -12,6 +12,19 @@ SIAMESE_BERT = os.environ['SIAMESE_BERT']
 DATA_PATH = SIAMESE_BERT + "/data/"
 sys.path.append(SIAMESE_BERT + '/data/')
 
+import argparse
+
+parser = argparse.ArgumentParser(description='Evaluating Siamese BERT on extremely-skewed dataset. ')
+
+parser.add_argument('--nb_reference', type=int, default=1,
+    help='Strategy used to compare test set with N reference normal observations. We strategy'
+         'in {1,3} ')
+
+
+args = parser.parse_args()
+NB_REFERENCE_NORMAL = args.nb_reference
+
+
 random.seed(1995)
 
 df = pd.read_csv(DATA_PATH + "/df_spam_XLM_en_2048_embed.csv")
@@ -115,7 +128,7 @@ if __name__ == "__main__":
     # df_concat_test = get_pairs(df_nonSPAM_test, df_SPAM_test, N_pairs_nonSPAM=10000)
 
     # 3/ Save them in data directory
-    # df_concat_train.to_csv(SIAMESE_BERT + "/data/train/pairs_ham10K_spam75K.tsv", sep='\t', index=False)
+    df_concat_train.to_csv(SIAMESE_BERT + "/data/train/pairs_ham10K_spam75K.tsv", sep='\t', index=False)
     # df_concat_test.to_csv(SIAMESE_BERT + "/data/test/pairs_ham10K_spam75K.tsv", sep='\t', index=False)
 
     # df_concat = get_pairs(df_nonSPAM, df_SPAM, N_pairs_nonSPAM=10000)
@@ -126,66 +139,112 @@ if __name__ == "__main__":
     # # print(df_concat[df_concat.label_nonSPAM.isnan])
     # print(df_concat.label.value_counts())
 
+    file_indices_train_test = DATA_PATH + "/storage_indices_train_test.dic"
+    # Get dictionary with indices from train/test set
+    with open(file_indices_train_test, "rb") as f:
+        storage_indices = pickle.load(f)
+
+    df_test = df[df.index.isin(storage_indices['test'])]
+    df_test = df_test.loc[:, ["message_cleaned", "is_spam"]]
 
     # For test set
-    """
-    @TODO: 
+    # Strategy 1 : only one reference observation for each x_test_obs
+    if NB_REFERENCE_NORMAL == 1:
+        """
+        @TODO: 
+    
+        1/ Take reference nonSPAM from TRAINING !!!
+        2/ For each observation, compare with each of the 3 reference observations 
+    
+        With this implementation, what we do is that we chose 3 random reference nonSPAM observations from training set
+        We assign them to every test observation only once! So for every observation we have compare(x_obs, random(reference_nonSPAM))
+    
+        In the future, we want: most_common[ (x_obs, reference_nonSPAM(1)), (x_obs, reference_nonSPAM(2)), (x_obs, reference_nonSPAM(3)) ] 
+        """
+        # Prepare test data
 
-    1/ Take reference nonSPAM from TRAINING !!!
-    2/ For each observation, compare with each of the 3 reference observations 
+        # file_indices_train_test = DATA_PATH + "/storage_indices_train_test.dic"
+        # # Get dictionary with indices from train/test set
+        # with open(file_indices_train_test, "rb") as f:
+        #     storage_indices = pickle.load(f)
 
-    With this implementation, what we do is that we chose 3 random reference nonSPAM observations from training set
-    We assign them to every test observation only once! So for every observation we have compare(x_obs, random(reference_nonSPAM))
+        # df = pd.read_csv("./data/df_spam_XLM_en_2048_embed.csv")
+        # df_test = df[df.index.isin(storage_indices['test'])]
+        # print(df_test.columns)
 
-    In the future, we want: most_common[ (x_obs, reference_nonSPAM(1)), (x_obs, reference_nonSPAM(2)), (x_obs, reference_nonSPAM(3)) ] 
-    """
+        # Step 2: We chose to take 3 nonSPAM representant as comparison for now
+        # For each x_new , we do compare(x_new, x_nonSPAM(1)), compare(x_new, x_nonSPAM(2)) compare(x_new, x_nonSPAM(3))
+        # Then we have label_1, label_2, label_3
+        # label(x_new) = most_common_label(label_1, label_2, label_3)
+        # Get 3 random nonSPAM representant
+        df_test_sample_nonSPAM = df_test.groupby('is_spam').get_group(0).loc[:4, 'message_cleaned']  # 3 representant
+        arr_nonSPAM_repr = np.array(df_test_sample_nonSPAM.values)
+        # print (arr_nonSPAM_repr.shape[0])
+        N_rep = df_test.shape[0] // arr_nonSPAM_repr.shape[0]
+        # expand array of reference representants of nonSPAM
+        arr_nonSPAM_repr_expand = np.tile(arr_nonSPAM_repr, N_rep)
+        while arr_nonSPAM_repr_expand.shape[0] != df_test.shape[0]:
+            arr_nonSPAM_repr_expand = np.append(arr_nonSPAM_repr_expand, [arr_nonSPAM_repr_expand[0]], axis=0)
+        assert arr_nonSPAM_repr_expand.shape[0] == df_test.shape[
+            0], "The reference nonSPAM texts does not match the test dataframe"
 
-    # Prepare test data
-    import pickle
-    import pandas as pd
-    import numpy as np
+        # Concatenate df_test with arr_nonSPAM_repr_expand
+        """
+        @TODO: normally we should map 0 --> 1 and 1 --> 0 in this labelling because the model predicts the exact opposite from Pearson Correlation = -1 
+    
+        In the future I will do in the train set : label_true(nonSPAM, nonSPAM) = 1 and label_true(nonSPAM, SPAM) = 0
+        But now, label_true(nonSPAM, nonSPAM) = 1 and label_true(nonSPAM, SPAM) = 0
+    
+        ------------------------------------------
+        Let's test now with: 
+        The current labelling where (SPAM, nonSPAM_reference ) will be label(SPAM) = 1 
+        And (nonSPAM, SPAM) = 0 
+        """
+        df_test = df_test.loc[:, ['message_cleaned', "is_spam"]]
+        df_test = pd.DataFrame(df_test)
+        df_test['reference_nonSPAM'] = arr_nonSPAM_repr_expand
+        # print(df_test.sample(2))
 
-    # file_indices_train_test = DATA_PATH + "/storage_indices_train_test.dic"
-    # # Get dictionary with indices from train/test set
-    # with open(file_indices_train_test, "rb") as f:
-    #     storage_indices = pickle.load(f)
+        df_test = df_test.reset_index(drop=True)
+        # shuffle data
+        df_test = df_test.sample(frac = 1)
+        df_test.to_csv(DATA_PATH + "/test/pairs_ham10K_spam75K.tsv", sep="\t")
 
-    # df = pd.read_csv("./data/df_spam_XLM_en_2048_embed.csv")
-    # df_test = df[df.index.isin(storage_indices['test'])]
-    # print(df_test.columns)
+    if NB_REFERENCE_NORMAL == 3:
+        """
+        In the following,
 
-    # Step 2: We chose to take 3 nonSPAM representant as comparison for now
-    # For each x_new , we do compare(x_new, x_nonSPAM(1)), compare(x_new, x_nonSPAM(2)) compare(x_new, x_nonSPAM(3))
-    # Then we have label_1, label_2, label_3
-    # label(x_new) = most_common_label(label_1, label_2, label_3)
-    # Get 3 random nonSPAM representant
-    df_test_sample_nonSPAM = df_test.groupby('is_spam').get_group(0).loc[:4, 'message_cleaned']  # 3 representant
-    arr_nonSPAM_repr = np.array(df_test_sample_nonSPAM.values)
-    # print (arr_nonSPAM_repr.shape[0])
-    N_rep = df_test.shape[0] // arr_nonSPAM_repr.shape[0]
-    # expand array of reference representants of nonSPAM
-    arr_nonSPAM_repr_expand = np.tile(arr_nonSPAM_repr, N_rep)
-    while arr_nonSPAM_repr_expand.shape[0] != df_test.shape[0]:
-        arr_nonSPAM_repr_expand = np.append(arr_nonSPAM_repr_expand, [arr_nonSPAM_repr_expand[0]], axis=0)
-    assert arr_nonSPAM_repr_expand.shape[0] == df_test.shape[
-        0], "The reference nonSPAM texts does not match the test dataframe"
+        We do exactly the same as before except that now we consider 3 reference comparisons instead of 1 
+        and we get the most common label as our predicted_label
+        """
 
-    # Concatenate df_test with arr_nonSPAM_repr_expand
-    """
-    @TODO: normally we should map 0 --> 1 and 1 --> 0 in this labelling because the model predicts the exact opposite from Pearson Correlation = -1 
+        # Step 2: We chose to take 3 nonSPAM representant as comparison for now
+        # For each x_new , we do compare(x_new, x_nonSPAM(1)), compare(x_new, x_nonSPAM(2)) compare(x_new, x_nonSPAM(3))
+        # Then we have label_1, label_2, label_3
+        # label(x_new) = most_common_label(label_1, label_2, label_3)
+        # Get 3 random nonSPAM representant
 
-    In the future I will do in the train set : label_true(nonSPAM, nonSPAM) = 1 and label_true(nonSPAM, SPAM) = 0
-    But now, label_true(nonSPAM, nonSPAM) = 1 and label_true(nonSPAM, SPAM) = 0
+        # @TODO: IN the future, you can get 3 representant from the TRAINING DATA not the TEST DATA as we do now.
+        df_test_sample_nonSPAM = df_test.groupby('is_spam').get_group(0).loc[:4,
+                                 'message_cleaned']  # get 3 representant
+        arr_nonSPAM_repr = np.array(df_test_sample_nonSPAM.values)
 
-    ------------------------------------------
-    Let's test now with: 
-    The current labelling where (SPAM, nonSPAM_reference ) will be label(SPAM) = 1 
-    And (nonSPAM, SPAM) = 0 
-    """
-    df_test = df_test.loc[:, ['message_cleaned', "is_spam"]]
-    df_test = pd.DataFrame(df_test)
-    df_test['reference_nonSPAM'] = arr_nonSPAM_repr_expand
-    # print(df_test.sample(2))
 
-    df_test = df_test.reset_index(drop=True)
-    df_test.to_csv(DATA_PATH + "/test/pairs_ham10K_spam75K.tsv", sep="\t")
+        # We want [x_reference_normal_1 for _ in range(N_test_obs)] , [x_reference_normal_2 for _ in range(N_test_obs)], [x_reference_normal_3 for _ in range(N_test_obs)]
+        N_test_obs = df_test.shape[0]
+        ref_1_arr, ref_2_arr, ref_3_arr = [arr_nonSPAM_repr[0] for _ in range(N_test_obs)], [arr_nonSPAM_repr[1] for _
+                                                                                             in range(N_test_obs)], [
+                                              arr_nonSPAM_repr[2] for _ in range(N_test_obs)]
+        ref_arr_tot = ref_1_arr + ref_2_arr + ref_3_arr  # concatenate above arrays
+
+        # We extend df_test 3 times : [df_test, df_test, df_test]
+        df_test_expand = pd.concat([df_test] * 3)  # Keep the index intact
+        # Add a new columb called 'reference_obs_normal' with reference observations (from nonSPAM in this case)
+        df_test_expand['reference_nonSPAM'] = ref_arr_tot
+
+
+        # We shuffle the test data
+        df_test_expand = df_test_expand.sample(frac=1)
+
+        df_test_expand.to_csv("./data/test/pairs_ham10K_spam75K.tsv", sep="\t")
+
