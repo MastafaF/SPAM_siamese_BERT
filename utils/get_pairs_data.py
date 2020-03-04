@@ -22,11 +22,15 @@ parser.add_argument('--nb_reference', type=int, default=1,
 parser.add_argument('--nb_pairs_nonSPAM', type=int, default=1e3,
     help='Number of pairs of nonSPAM used for comparison in the training set ')
 
+parser.add_argument('--percentage_anomaly', type=float, default=100,
+    help='Percentage of anomalies kept in the training set. This ratio is in percentage')
 
 
 args = parser.parse_args()
 NB_REFERENCE_NORMAL = args.nb_reference
 N_pairs_nonSPAM = args.nb_pairs_nonSPAM
+PERCENTAGE_ANOMALY = args.percentage_anomaly
+
 
 random.seed(1995)
 
@@ -118,6 +122,10 @@ if __name__ == "__main__":
 
         df_SPAM['label_SPAM'] = 1
         df_nonSPAM['label_nonSPAM'] = 0
+
+        if PERCENTAGE_ANOMALY != 100: # If the percentage of desired anomalies is != 100%
+            # Then take only a fraction of anomalies = SPAM here
+            df_SPAM = df_SPAM.sample(frac = PERCENTAGE_ANOMALY/100, random_state = 1995)
         return df_nonSPAM, df_SPAM
 
     # For training, it works well but we made mistake in df_test
@@ -209,8 +217,6 @@ if __name__ == "__main__":
         # print(df_test.sample(2))
 
         df_test = df_test.reset_index(drop=True)
-        # shuffle data
-        df_test = df_test.sample(frac = 1)
         df_test.to_csv(DATA_PATH + "/test/pairs_ham10K_spam75K.tsv", sep="\t")
 
     if NB_REFERENCE_NORMAL == 3:
@@ -244,10 +250,6 @@ if __name__ == "__main__":
         df_test_expand = pd.concat([df_test] * 3)  # Keep the index intact
         # Add a new columb called 'reference_obs_normal' with reference observations (from nonSPAM in this case)
         df_test_expand['reference_nonSPAM'] = ref_arr_tot
-
-
-        # We shuffle the test data
-        df_test_expand = df_test_expand.sample(frac=1)
 
         df_test_expand.to_csv(DATA_PATH + "/test/pairs_ham10K_spam75K.tsv", sep="\t")
 
