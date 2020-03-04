@@ -126,7 +126,7 @@ if __name__ == "__main__":
         if PERCENTAGE_ANOMALY != 100: # If the percentage of desired anomalies is != 100%
 
             print("We take {}% of anomalies".format(PERCENTAGE_ANOMALY))
-            print("Original number of anomalies: ".format(df_SPAM.shape[0]))
+            print("Original number of anomalies {}: ".format(df_SPAM.shape[0]))
             # Then take only a fraction of anomalies = SPAM here
             ratio_anomaly = PERCENTAGE_ANOMALY/100
             nb_normal = df_nonSPAM.shape[0]
@@ -134,7 +134,7 @@ if __name__ == "__main__":
             # We deduce from that:
             nb_expected_anomaly = ratio_anomaly*nb_normal/(1-ratio_anomaly)
             df_SPAM = df_SPAM.sample(n = int(nb_expected_anomaly) , random_state = 1995)
-            print("Sampled number of anomalies: ".format(df_SPAM.shape[0]))
+            print("Sampled number of anomalies {}: ".format(df_SPAM.shape[0]))
 
         return df_nonSPAM, df_SPAM
 
