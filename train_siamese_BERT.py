@@ -19,6 +19,7 @@ from utils.EmbeddingSimilarityEvaluator import EmbeddingSimilarityEvaluatorNew
 from SPAM_Reader import *
 import pandas as pd
 import numpy as np
+import pickle
 
 from sklearn.metrics import classification_report
 
@@ -41,7 +42,7 @@ NB_EPOCHS = args.epochs_train
 # export SIAMESE_BERT='/Users/foufamastafa/Documents/micro_projects/sentence_BERT_cosine/anomaly_detection_SPAM_nonSPAM'
 assert os.environ.get('SIAMESE_BERT'), 'Please set the environment variable SIAMESE_BERT'
 SIAMESE_BERT = os.environ['SIAMESE_BERT']
-DATA_PATH = SIAMESE_BERT + "/data/"
+DATA_PATH = SIAMESE_BERT + "/data"
 sys.path.append(SIAMESE_BERT + '/data/')
 
 
@@ -177,6 +178,14 @@ if NB_REFERENCE_NORMAL == 3:
     labels_pred = [threshold(dot_product) for sublist in labels for dot_product in
                    sublist]  # if positive value, they are similar, if negative they are dissimilar
 
+    with open(file_indices_train_test, "rb") as f:
+        storage_indices = pickle.load(f)
+    df = pd.read_csv(DATA_PATH + "/df_spam_XLM_en_2048_embed.csv")
+    df_test = df[df.index.isin(storage_indices['test'])]
+    df_test = df_test.loc[:, ["message_cleaned", "is_spam"]]
+
+    # @TODO: distinguish df_test which is coming from df original and the test indices
+    # From df_test_expand
     # IMPORTANT: we need to keep the index of the observations for the group by
     # So we specify index_col parameter when read_csv is called
     df_test_expand = pd.read_csv(DATA_PATH + "/test/pairs_ham10K_spam75K.tsv", sep = "\t", index_col = [0])
