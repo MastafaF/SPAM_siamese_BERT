@@ -133,7 +133,7 @@ if __name__ == "__main__":
             # We know ratio_anomaly = nb_normal/(nb_normal + nb_expected_anomaly)
             # We deduce from that:
             nb_expected_anomaly = ratio_anomaly*nb_normal/(1-ratio_anomaly)
-            df_SPAM = df_SPAM.sample(n = nb_expected_anomaly , random_state = 1995)
+            df_SPAM = df_SPAM.sample(n = int(nb_expected_anomaly) , random_state = 1995)
             print("Sampled number of anomalies: ".format(df_SPAM.shape[0]))
 
         return df_nonSPAM, df_SPAM
