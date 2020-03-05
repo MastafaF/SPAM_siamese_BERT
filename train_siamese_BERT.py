@@ -174,6 +174,8 @@ def threshold(x):
     else:
         return 1
 
+file_indices_train_test = DATA_PATH + "/storage_indices_train_test.dic"
+
 if NB_REFERENCE_NORMAL == 3:
     labels_pred = [threshold(dot_product) for sublist in labels for dot_product in
                    sublist]  # if positive value, they are similar, if negative they are dissimilar
